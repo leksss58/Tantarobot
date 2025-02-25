@@ -38,84 +38,21 @@ class Bot(private val botUseCase: BotUseCase) :
                 setupCommands()
 
                 //Callbacks
-                setupGenderRuCallBack()
-                setupGenderEnCallBack()
+                setupGenderCallback(UserLanguageType.RUSSIAN, BTN_RU, "ru_change_gender")
+                setupGenderCallback(UserLanguageType.ENGLISH, BTN_EN, "en_change_gender")
 
-                setupLanguageManCallBack()
-                setupLanguageWomanCallBack()
+                setupGenderCallback(BTN_MAN, UserGenderType.MAN)
+                setupGenderCallback(BTN_WOMAN, UserGenderType.WOMAN)
+
+                setupDateCallBack()
             }
         }
     }
 
-    private fun Dispatcher.setupLanguageManCallBack() {
-        callbackQuery(callbackData = BTN_MAN) {
-            botUseCase.updateUserGender(userId = callbackQuery.from.id, gender = UserGenderType.MAN)
-
-            val inlineKeyboardMarkup = InlineKeyboardMarkup.create(
-                listOf(
-                    InlineKeyboardButton.CallbackData(
-                        text = when (botUseCase.getUser(callbackQuery.from.id).language) {
-                            UserLanguageType.RUSSIAN -> "Пропустить (не рекоментдуется)"
-                            UserLanguageType.ENGLISH -> "Skip (not recommended)"
-                            UserLanguageType.NONE -> ""
-                        },
-                        callbackData = BTN_MAN
-                    )
-                )
-            )
-            bot.sendPhoto(
-                chatId = chatId,
-                photo = TelegramFile.ByUrl("https://i.ibb.co/hJYZVMJT/mock-selfie.jpg"),
-                caption = when (botUseCase.getUser(callbackQuery.from.id).language) {
-                    UserLanguageType.RUSSIAN -> StringResources.get("ru_selfie")
-                    UserLanguageType.ENGLISH -> StringResources.get("en_selfie")
-                    UserLanguageType.NONE -> ""
-                },
-                parseMode = ParseMode.MARKDOWN,
-                replyMarkup = inlineKeyboardMarkup
-            )
-        }
-    }
-
-    private fun Dispatcher.setupLanguageWomanCallBack() {
-        callbackQuery(callbackData = BTN_WOMAN) {
-            botUseCase.updateUserGender(userId = callbackQuery.from.id, gender = UserGenderType.WOMAN)
-
-            val inlineKeyboardMarkup = InlineKeyboardMarkup.create(
-                listOf(
-                    InlineKeyboardButton.CallbackData(
-                        text = when (botUseCase.getUser(callbackQuery.from.id).language) {
-                            UserLanguageType.RUSSIAN -> StringResources.get("ru_skip")
-                            UserLanguageType.ENGLISH -> StringResources.get("ru_skip")
-                            UserLanguageType.NONE -> ""
-                        },
-                        callbackData = BTN_WOMAN
-                    )
-                )
-            )
-
-            bot.sendPhoto(
-                chatId = chatId,
-                photo = TelegramFile.ByUrl("https://i.ibb.co/hJYZVMJT/mock-selfie.jpg"),
-                caption = when (botUseCase.getUser(callbackQuery.from.id).language) {
-                    UserLanguageType.RUSSIAN -> StringResources.get("ru_selfie")
-                    UserLanguageType.ENGLISH -> StringResources.get("en_selfie")
-                    UserLanguageType.NONE -> ""
-                },
-                parseMode = ParseMode.MARKDOWN,
-                replyMarkup = inlineKeyboardMarkup
-            )
-        }
-    }
-
-    /**
-     * Обработчик для Русской аудитории (Выбор пола)
-     */
-    private fun Dispatcher.setupGenderRuCallBack() {
-        callbackQuery(callbackData = BTN_RU) {
-
+    private fun Dispatcher.setupGenderCallback(languageType: UserLanguageType, callbackData: String, messageKey: String) {
+        callbackQuery(callbackData = callbackData) {
             try {
-                botUseCase.updateUserLanguage(userId = callbackQuery.from.id, language = UserLanguageType.RUSSIAN)
+                botUseCase.updateUserLanguage(userId = callbackQuery.from.id, language = languageType)
             } catch (e: Exception) {
                 println("Error updating user language: ${e.message}")
                 e.printStackTrace()
@@ -124,21 +61,104 @@ class Bot(private val botUseCase: BotUseCase) :
             val inlineKeyboardMarkup = InlineKeyboardMarkup.create(
                 listOf(
                     InlineKeyboardButton.CallbackData(
-                        text = "Мужской \uD83D\uDC68",
+                        text = when (languageType) {
+                            UserLanguageType.RUSSIAN -> "Мужской \uD83D\uDC68"
+                            UserLanguageType.ENGLISH -> "Man \uD83D\uDC68"
+                            else -> ""
+                        },
                         callbackData = BTN_MAN
                     ),
                     InlineKeyboardButton.CallbackData(
-                        text = "Женский \uD83D\uDC69",
+                        text = when (languageType) {
+                            UserLanguageType.RUSSIAN -> "Женский \uD83D\uDC69"
+                            UserLanguageType.ENGLISH -> "Woman \uD83D\uDC69"
+                            else -> ""
+                        },
                         callbackData = BTN_WOMAN
                     )
                 )
             )
+
+
             bot.sendMessage(
                 chatId = chatId,
-                text = StringResources.get("ru_change_gender"),
+                text = StringResources.get(messageKey),
                 replyMarkup = inlineKeyboardMarkup
             )
         }
+    }
+
+    private fun Dispatcher.setupGenderCallback(callbackData: String, gender: UserGenderType) {
+        callbackQuery(callbackData = callbackData) {
+            botUseCase.updateUserGender(userId = callbackQuery.from.id, gender = gender)
+
+            val userLanguage = botUseCase.getUser(callbackQuery.from.id).language
+
+            val inlineKeyboardMarkup = InlineKeyboardMarkup.create(
+                listOf(
+                    InlineKeyboardButton.CallbackData(
+                        text = when (userLanguage) {
+                            UserLanguageType.RUSSIAN -> StringResources.get("ru_skip")
+                            UserLanguageType.ENGLISH -> StringResources.get("en_skip")
+                            UserLanguageType.NONE -> ""
+                        },
+                        callbackData = BTN_SKIP
+                    )
+                )
+            )
+
+            bot.sendPhoto(
+                chatId = chatId,
+                photo = TelegramFile.ByUrl("https://i.ibb.co/hJYZVMJT/mock-selfie.jpg"),
+                caption = when (userLanguage) {
+                    UserLanguageType.RUSSIAN -> StringResources.get("ru_selfie")
+                    UserLanguageType.ENGLISH -> StringResources.get("en_selfie")
+                    UserLanguageType.NONE -> ""
+                },
+                parseMode = ParseMode.MARKDOWN,
+                replyMarkup = inlineKeyboardMarkup
+            )
+        }
+    }
+
+    private fun Dispatcher.setupDateCallBack() {
+        callbackQuery(callbackData = BTN_SKIP) {
+
+            val userId = callbackQuery.from.id
+            val userLanguage = botUseCase.getUser(callbackQuery.from.id).language
+
+            bot.sendMessage(
+                chatId = chatId,
+                text = when (userLanguage) {
+                    UserLanguageType.RUSSIAN -> StringResources.get("ru_data_message")
+                    UserLanguageType.ENGLISH -> StringResources.get("en_data_message")
+                    UserLanguageType.NONE -> ""
+                }
+            )
+
+            // Ожидаем ввод даты пользователем
+            waitForDateInput(userId, userLanguage)
+        }
+    }
+
+    private fun Dispatcher.waitForDateInput(userId: Long, userLanguage: UserLanguageType) {
+        text {
+            if (message.from?.id == userId) {
+                val dateInput = message.text
+                botUseCase.updateUserBirthday(userId, dateInput.orEmpty())
+
+                bot.sendMessage(
+                    chatId = ChatId.fromId(userId),
+                    text = when (userLanguage) {
+                        UserLanguageType.RUSSIAN -> StringResources.get("ru_target_message")
+                        UserLanguageType.ENGLISH -> StringResources.get("en_target_message")
+                        UserLanguageType.NONE -> ""
+                    }
+                )
+            }
+            println("${botUseCase.getUser(userId)}")
+        }
+
     }
 
     /**
@@ -163,39 +183,11 @@ class Bot(private val botUseCase: BotUseCase) :
         }
     }
 
-
-    /**
-     * Обработчик для Американской аудитории (Выбор пола)
-     */
-    private fun Dispatcher.setupGenderEnCallBack() {
-        callbackQuery(callbackData = BTN_EN) {
-            botUseCase.updateUserLanguage(userId = callbackQuery.from.id, language = UserLanguageType.ENGLISH)
-            val inlineKeyboardMarkup = InlineKeyboardMarkup.create(
-                listOf(
-                    InlineKeyboardButton.CallbackData(
-                        text = "Man \uD83D\uDC68",
-                        callbackData = BTN_MAN
-                    ),
-                    InlineKeyboardButton.CallbackData(
-                        text = "Woman \uD83D\uDC69",
-                        callbackData = BTN_WOMAN
-                    )
-                )
-            )
-
-            bot.sendMessage(
-                chatId = chatId,
-                text = StringResources.get("en_change_gender"),
-                replyMarkup = inlineKeyboardMarkup
-            )
-        }
-    }
-
     private fun Dispatcher.setupCommands() {
         command("start") {
             _chatId = ChatId.fromId(message.chat.id)
 
-            //sendMainMenu()
+            sendMainMenu()
 
             val inlineKeyboardMarkup = InlineKeyboardMarkup.create(
                 listOf(
@@ -216,43 +208,43 @@ class Bot(private val botUseCase: BotUseCase) :
                 replyMarkup = inlineKeyboardMarkup
             )
 
-//            text(BOTTOM_MENU_GET_CARD) {
-//                bot.sendMessage(
-//                    chatId = ChatId.fromId(message.chat.id),
-//                    text = "Получаем новую карту"
-//                )
-//            }
-//
-//            val profileText = """
-//        📌 АНКЕТА ПОЛЬЗОВАТЕЛЯ 📌
-//
-//        ├─ 📝 Имя: ${botUseCase.getUser(message.from?.id).userName}
-//        ├─ 📅 Дата рождения: ${botUseCase.getUser(message.from?.id).date}
-//        ├─ ⚤  Пол: ${botUseCase.getUser(message.from?.id).gender}
-//        └─ 🌍 Язык: ${botUseCase.getUser(message.from?.id).language}
-//            """.trimIndent()
-//
-//            text(BOTTOM_MENU_PROFILE) {
-//                bot.sendMessage(
-//                    chatId = ChatId.fromId(message.chat.id),
-//                    text = profileText
-//                )
-//            }
-//
-//            text(BOTTOM_MENU_SETTINGS) {
-//                bot.sendMessage(
-//                    chatId = ChatId.fromId(message.chat.id),
-//                    text = "Настройки в разработке"
-//                )
-//            }
+            text(BOTTOM_MENU_GET_CARD) {
+                bot.sendMessage(
+                    chatId = ChatId.fromId(message.chat.id),
+                    text = "Получаем новую карту"
+                )
+            }
+
+            val profileText = """
+        📌 АНКЕТА ПОЛЬЗОВАТЕЛЯ 📌
+
+        ├─ 📝 Имя: ${botUseCase.getUser(message.from?.id).userName}
+        ├─ 📅 Дата рождения: ${botUseCase.getUser(message.from?.id).date}
+        ├─ ⚤  Пол: ${botUseCase.getUser(message.from?.id).gender}
+        └─ 🌍 Язык: ${botUseCase.getUser(message.from?.id).language}
+            """.trimIndent()
+
+            text(BOTTOM_MENU_PROFILE) {
+                bot.sendMessage(
+                    chatId = ChatId.fromId(message.chat.id),
+                    text = profileText
+                )
+            }
+
+            text(BOTTOM_MENU_SETTINGS) {
+                bot.sendMessage(
+                    chatId = ChatId.fromId(message.chat.id),
+                    text = "Настройки в разработке"
+                )
+            }
 
             try {
                 botUseCase.insertUser(
                     User(
                         id = message.from?.id,
-                        date = message.date.toString(),
-                        userName = message.from?.firstName ?: message.from?.lastName
-                        ?: message.from?.username.orEmpty(),
+                        userName = message.from?.firstName
+                            ?: message.from?.lastName
+                            ?: message.from?.username.orEmpty(),
                     )
                 )
                 println("User inserted successfully!")
@@ -280,6 +272,8 @@ class Bot(private val botUseCase: BotUseCase) :
 
         const val BTN_MAN = "btn_man"
         const val BTN_WOMAN = "btn_woman"
+
+        const val BTN_SKIP = "btn_skip"
 
         //Нижнее меню
         const val BOTTOM_MENU_GET_CARD = "\uD83D\uDD0D Получить новую карту"
