@@ -1,0 +1,30 @@
+<hibernate-configuration>
+    <session-factory>
+        <!-- Драйвер и URL -->
+        <property name="hibernate.connection.driver_class">org.sqlite.JDBC</property>
+        <property name="hibernate.connection.url">jdbc:sqlite:database.db</property>
+
+        <!-- Драйвер HikariCP -->
+        <property name="hibernate.connection.provider_class">org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl</property>
+        <property name="hibernate.hikari.maximumPoolSize">10</property>
+
+        <!-- Диалект SQLite -->
+        <property name="hibernate.dialect">org.hibernate.community.dialect.SQLiteDialect</property>
+
+        <!-- Создание/обновление схемы -->
+        <property name="hibernate.hbm2ddl.auto">update</property>
+
+        <!-- Лог SQL-запросов -->
+        <property name="hibernate.show_sql">false</property>
+
+        <!-- Транзакции -->
+        <property name="hibernate.connection.autocommit">true</property>
+        <property name="hibernate.transaction.jta.platform">org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform</property>
+
+        <!-- Отключение второго уровня кеша -->
+        <property name="hibernate.cache.use_second_level_cache">false</property>
+        <property name="hibernate.cache.use_query_cache">false</property>
+
+        <mapping class="db.entity.User"/>
+    </session-factory>
+</hibernate-configuration>
